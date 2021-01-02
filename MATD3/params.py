@@ -1,5 +1,6 @@
 from pettingzoo.sisl import multiwalker_v5
 import torch
+from datetime import datetime
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Project parameters
@@ -9,6 +10,10 @@ seed = 42                           # seed value for numpy, env, torch
 # torch.manual_seed(seed)             # set torch seed, currently unused
 # numpy.random.seed(seed)             # set numpy seed, currently unused
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# write csv reports
+write_reports = True
+# global date/time for file naming
+timestr = datetime.now().strftime("%d-%b-%y_%H-%M")
 # ----------------------------------------------------------------------------------------------------------------------
 # SISL Environment setup
 # ----------------------------------------------------------------------------------------------------------------------

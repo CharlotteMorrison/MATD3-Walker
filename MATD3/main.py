@@ -4,6 +4,7 @@ from MATD3.matd3 import MATD3
 from MATD3.replay.priority_replay_buffer import PrioritizedReplayBuffer
 from MATD3.replay.replay_buffer import ReplayBuffer
 from MATD3.replay.schedules import LinearSchedule
+from MATD3.reports import Reports
 
 if __name__ == "__main__":
 
@@ -11,6 +12,9 @@ if __name__ == "__main__":
     env.reset()
     if p.render:
         env.render()
+
+    # initialize the reports
+    reports = Reports()
 
     # initialize policy
     policy = MATD3(p.num_agents)
@@ -84,17 +88,21 @@ if __name__ == "__main__":
         if step >= p.obs_timesteps:
             policy.train(replay_buffer, p.batch_size)
 
+        elapsed_time = time.time() - start_time
+        if p.write_reports:
+            reports.write_step_report(episode_num + 1, step, reward, done, elapsed_time)
+
         if done:
             avg_reward = round(sum(episode_reward)/len(episode_reward), 4)
             sum_reward = round(sum(episode_reward), 4)
-            elapsed_time = time.time() - start_time
             episode_elapsed_time = time.time() - episode_start_time
 
             # print out some stuff....
             # add one to the step, episode numbers to deal with zero indexing
             print("\n********** Episode {} ***********".format(episode_num + 1))
-            print("Average Reward [last episode of {} steps]: {}".format(episode_timesteps, avg_reward))
-            print("Sum of Rewards [last episode of {} steps]: {}".format(episode_timesteps, sum_reward))
+            print("Episode Steps: {}".format(episode_timesteps))
+            print("Average Reward: {}".format(episode_timesteps, avg_reward))
+            print("Sum of Rewards: {}".format(episode_timesteps, sum_reward))
             print("Total Timesteps: {}".format(step + 1))
             print("Total elapsed Time: {}".format(time.strftime("%H:%M:%S", time.gmtime(elapsed_time))))
             print("Episode elapsed Time: {}".format(time.strftime("%H:%M:%S", time.gmtime(episode_elapsed_time))))
@@ -105,7 +113,8 @@ if __name__ == "__main__":
                 policy.save()
 
             # reset the environment
-            env.close()
+            if p.render:
+                env.close()
             env.reset()
             time.sleep(2)
             state, _, done, _ = env.last()
@@ -116,5 +125,4 @@ if __name__ == "__main__":
             episode_num += 1
             episode_start_time = time.time()
 
-
-
+    reports.write_final_values()    # reports written in a batch, make sure final batch is written

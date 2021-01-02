@@ -1,7 +1,9 @@
+import copy
 import torch.nn.functional as F
 import numpy as np
 import torch
 import MATD3.params as p
+from MATD3 import main
 from MATD3.actor import Actor
 from MATD3.critic import Critic
 
@@ -56,9 +58,10 @@ class MATD3(object):
         # get a sample from the replay buffer (priority buffer option)
         if p.priority:
             state, actions, reward, next_state, done, weights, indexes = replay.sample(batch_size,
-                                                                                      beta=p.beta_sched.value(self.total_iterations))
+                                                                        beta=p.beta_sched.value(self.total_iterations))
         else:
             state, actions, reward, next_state, done = replay.sample(batch_size)
+            indexes = [0]   # just to remove the annoying pycharm warning.
 
         # convert to tensors and send to gpu                                 # batch size 256 sample
         state = torch.from_numpy(state).float().to(p.device)                 # torch.Size([256, 31])
@@ -79,6 +82,7 @@ class MATD3(object):
                 # compute the target Q values, minimum of the two values
                 target_q1, target_q2 = self.critic_target[i](next_state, next_action)
                 target_q = torch.min(target_q1, target_q2)
+                target_q = reward + done * p.discount + target_q
 
             # get current Q estimates
             current_q1, current_q2 = self.critic[i](state, action)
@@ -86,15 +90,26 @@ class MATD3(object):
             # compute critic loss from current to target
             critic_loss = F.mse_loss(current_q1, target_q) + F.mse_loss(current_q2, target_q)
 
+            # write the critic loss to the report
+            main.reports.write_critic_loss(main.episode_num + 1, main.step, p.agent_names[i], critic_loss)
+
             # optimize the critic
             self.critic_optimizer[i].zero_grad()
             critic_loss.backward()
             self.critic_optimizer[i].step()
 
+            # TODO: if using priority replay, need to add weighting
+            if p.priority:
+                # need to figure out weighting, by reward maybe, must be positive
+                # placeholder list of ones
+                new_priorities = torch.full((256,), 1)
+                replay.update_priorities(indexes, new_priorities)
+
             # delayed policy updates
             if self.total_iterations % p.policy_freq == 0:
                 # compute actor loss
                 actor_loss = -self.critic[i].get_q(state, self.actor[i](state)).mean()
+                main.reports.write_actor_loss(main.episode_num + 1, main.step, p.agent_names[i], actor_loss)
 
                 # optimize the actor
                 self.actor_optimizer[i].zero_grad()
@@ -107,3 +122,28 @@ class MATD3(object):
                 for param, target_param in zip(self.actor[i].parameters(), self.actor_target[i].parameters()):
                                         target_param.data.copy_(p.tau * param.data + (1 - p.tau) * target_param.data)
 
+    def save(self):
+        for i in range(p.num_agents):
+            torch.save(self.critic[i].state_dict(),
+                       'models/policy_{}_'.format(p.timestr) + p.agent_names[i] + '_critic.pth')
+            torch.save(self.critic_optimizer[i].state_dict(),
+                       'models/policy_{}_'.format(p.timestr) + p.agent_names[i] + '_critic_optimizer.pth')
+
+            torch.save(self.actor[i].state_dict(),
+                       'models/policy_{}_'.format(p.timestr) + p.agent_names[i] + '_actor.pth')
+            torch.save(self.actor_optimizer[i].state_dict(),
+                       'models/policy_{}_'.format(p.timestr) + p.agent_names[i] + '_actor_optimizer.pth')
+
+    def load(self):
+        for i in range(p.num_agents):
+            self.critic[i].load_state_dict(torch.load(
+                'models/policy_{}_'.format(p.timestr) + p.agent_names[i] + '_critic.pth'))
+            self.critic_optimizer[i].load_state_dict(torch.load(
+                'models/policy_{}_'.format(p.timestr) + p.agent_names[i] + '_critic_optimizer.pth'))
+            self.critic_target[i] = copy.deepcopy(self.critic[i])
+
+            self.actor[i].load_state_dict(torch.load(
+                'models/policy_{}_'.format(p.timestr) + p.agent_names[i] + '_agent.pth'))
+            self.actor_optimizer[i].load_state_dict(
+                'models/policy_{}_'.format(p.timestr) + p.agent_names[i] + '_actor_optimizer.pth')
+            self.actor_target[i] = copy.deepcopy(self.actor[i])
