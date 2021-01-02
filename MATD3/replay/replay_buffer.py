@@ -33,12 +33,14 @@ class ReplayBuffer(object):
             dones.append(done)
         return np.array(obses_t), np.array(actions), np.array(rewards),  np.array(obses_tp1),  np.array(dones)
 
-    def sample(self, batch_size):
+    def sample(self, batch_size, beta=0):
         """Sample a batch of experiences.
         Parameters
         ----------
         batch_size: int
             How many transitions to sample.
+        beta: int
+            Unused, for annealing in priority
         Returns
         -------
         obs_batch: np.array
