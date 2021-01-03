@@ -3,7 +3,6 @@ import torch.nn.functional as F
 import numpy as np
 import torch
 import MATD3.params as p
-from MATD3 import main
 from MATD3.actor import Actor
 from MATD3.critic import Critic
 
@@ -82,7 +81,7 @@ class MATD3(object):
                 # compute the target Q values, minimum of the two values
                 target_q1, target_q2 = self.critic_target[i](next_state, next_action)
                 target_q = torch.min(target_q1, target_q2)
-                target_q = reward + done * p.discount + target_q
+                target_q = reward.unsqueeze(1) + done.unsqueeze(1) * p.discount * target_q
 
             # get current Q estimates
             current_q1, current_q2 = self.critic[i](state, action)
@@ -90,8 +89,11 @@ class MATD3(object):
             # compute critic loss from current to target
             critic_loss = F.mse_loss(current_q1, target_q) + F.mse_loss(current_q2, target_q)
 
-            # write the critic loss to the report
-            main.reports.write_critic_loss(main.episode_num + 1, main.step, p.agent_names[i], critic_loss)
+            # write the critic loss to the report, graphs
+            # update values from main- this is janky- rework later.
+            p.reports.write_critic_report(p.episode + 1, p.step, p.agent_names[i], critic_loss)
+
+            p.graphs.critic_list.append([p.episode + 1, p.step, p.agent_names[i], critic_loss.item()])
 
             # optimize the critic
             self.critic_optimizer[i].zero_grad()
@@ -109,7 +111,10 @@ class MATD3(object):
             if self.total_iterations % p.policy_freq == 0:
                 # compute actor loss
                 actor_loss = -self.critic[i].get_q(state, self.actor[i](state)).mean()
-                main.reports.write_actor_loss(main.episode_num + 1, main.step, p.agent_names[i], actor_loss)
+
+                # update values from main- this is janky- rework later.
+                p.reports.write_actor_report(p.episode + 1, p.step, p.agent_names[i], actor_loss)
+                p.graphs.actor_list.append([p.episode + 1, p.step, p.agent_names[i], actor_loss.item()])
 
                 # optimize the actor
                 self.actor_optimizer[i].zero_grad()

@@ -4,7 +4,7 @@ from MATD3.matd3 import MATD3
 from MATD3.replay.priority_replay_buffer import PrioritizedReplayBuffer
 from MATD3.replay.replay_buffer import ReplayBuffer
 from MATD3.replay.schedules import LinearSchedule
-from MATD3.reports import Reports
+
 
 if __name__ == "__main__":
 
@@ -12,9 +12,6 @@ if __name__ == "__main__":
     env.reset()
     if p.render:
         env.render()
-
-    # initialize the reports
-    reports = Reports()
 
     # initialize policy
     policy = MATD3(p.num_agents)
@@ -43,16 +40,15 @@ if __name__ == "__main__":
     # set episode variables
     episode_reward = []
     episode_timesteps = 0
-    episode_num = 0
     episode_start_time = time.time()
 
     # iterate through training
     for step in range(p.max_timsteps):
         episode_timesteps += 1
+        p.step += 1                  # fix this iterator if you have energy
 
         # select random action for first obs_timesteps, then according to policy
-        # TODO add a max episode length if needed
-        if step < p.obs_timesteps:
+        if p.step < p.obs_timesteps:
             _, _, done, _ = env.last()
             if done:
                 if not p.render:
@@ -85,12 +81,15 @@ if __name__ == "__main__":
         episode_reward.append(reward)
 
         # start training if exploration is complete
-        if step >= p.obs_timesteps:
+        if p.step >= p.obs_timesteps:
             policy.train(replay_buffer, p.batch_size)
 
         elapsed_time = time.time() - start_time
         if p.write_reports:
-            reports.write_step_report(episode_num + 1, step, reward, done, elapsed_time)
+            p.reports.write_step_report(p.episode + 1, p.step, reward, done, elapsed_time)
+
+        # add step to graph data
+        p.graphs.step_list.append([p.episode, p.step, reward, done, elapsed_time])
 
         if done:
             avg_reward = round(sum(episode_reward)/len(episode_reward), 4)
@@ -99,13 +98,16 @@ if __name__ == "__main__":
 
             # print out some stuff....
             # add one to the step, episode numbers to deal with zero indexing
-            print("\n********** Episode {} ***********".format(episode_num + 1))
+            print("\n********** Episode {} ***********".format(p.episode + 1))
             print("Episode Steps: {}".format(episode_timesteps))
-            print("Average Reward: {}".format(episode_timesteps, avg_reward))
-            print("Sum of Rewards: {}".format(episode_timesteps, sum_reward))
-            print("Total Timesteps: {}".format(step + 1))
+            print("Average Reward: {}".format(avg_reward))
+            print("Sum of Rewards: {}".format(sum_reward))
+            print("Total Timesteps: {}".format(p.step + 1))
             print("Total elapsed Time: {}".format(time.strftime("%H:%M:%S", time.gmtime(elapsed_time))))
             print("Episode elapsed Time: {}".format(time.strftime("%H:%M:%S", time.gmtime(episode_elapsed_time))))
+
+            # update the graphs at the end of the episode
+            p.graphs.update_step_list_graphs()
 
             # if the total reward is better than best, save new model
             if sum_reward > best_episode_reward:
@@ -122,7 +124,8 @@ if __name__ == "__main__":
             # reset episode counters
             episode_reward = []
             episode_timesteps = 0
-            episode_num += 1
+            p.episode += 1
             episode_start_time = time.time()
 
-    reports.write_final_values()    # reports written in a batch, make sure final batch is written
+    p.reports.write_final_values()        # reports written in a batch, make sure final batch is written
+    p.graphs.update_step_list_graphs()    # at the end do a final update of the graphs
