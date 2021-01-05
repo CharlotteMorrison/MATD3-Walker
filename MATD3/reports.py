@@ -17,9 +17,9 @@ class Reports:
         self.critic_report = open('reports/critic_report_{}.csv'.format(p.timestr),  'w+')
         self.evaluation_report = open('reports/evaluation_report_{}.csv'.format(p.timestr), 'w+')
         # write headers for files
-        self.step_report.write("episode,step,reward,step_distance_moved,step_distance_target,solved,time_elapsed\n")
-        self.actor_report.write("episode,step,actor_1_loss,actor_2_loss\n")
-        self.critic_report.write("episode,step,critic_1_loss,critic_2_loss\n")
+        self.step_report.write("episode,step,reward,solved,time_elapsed\n")
+        self.actor_report.write("episode,step,agent,actor_loss\n")
+        self.critic_report.write("episode,step,agent,critic_loss\n")
 
         # create temp storage lists for batch writes.
         self.step_list = []

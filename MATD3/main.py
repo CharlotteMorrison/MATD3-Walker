@@ -50,26 +50,25 @@ if __name__ == "__main__":
         # select random action for first obs_timesteps, then according to policy
         if p.step < p.obs_timesteps:
             _, _, done, _ = env.last()
-            if done:
+            if done:    # if done, close render window, reset the environment, wait to allow processes to finish
                 if not p.render:
                     env.close()
                 env.reset()
                 time.sleep(2)
-            else:
-                for agent in p.agent_names:
+            else:       # else get random action for exploration
+                for agent in p.agent_names:     # TODO update to parallel environment
                     actions[int(agent[-1:])] = env.action_spaces[agent].sample()
             if p.render:
                 env.render()
-        # if exploration complete, then choose actions via policy
-        else:
-            actions = policy.select_actions(state)
+        else:           # if exploration complete, then choose actions via policy
+            actions = policy.select_actions(state)  # TODO update to parallel environment
         # perform the action for each agent, use the final reward for the cooperative task
         # the reward will be the distance moved after all n walkers move
-        for i in range(p.num_agents):
+        for i in range(p.num_agents):  # TODO update to parallel environment
             env.step(actions[i])
 
         # get the values after the step
-        next_state, reward, done, info = env.last()
+        next_state, reward, done, info = env.last()  # TODO update to parallel environment
 
         # store the step in the replay buffer
         replay_buffer.add(state, actions, reward, next_state, done)
@@ -84,6 +83,7 @@ if __name__ == "__main__":
         if p.step >= p.obs_timesteps:
             policy.train(replay_buffer, p.batch_size)
 
+        # get elapsed_time, write step information to .csv file
         elapsed_time = time.time() - start_time
         if p.write_reports:
             p.reports.write_step_report(p.episode + 1, p.step, reward, done, elapsed_time)
@@ -91,12 +91,11 @@ if __name__ == "__main__":
         # add step to graph data
         p.graphs.step_list.append([p.episode, p.step, reward, done, elapsed_time])
 
-        if done:
+        if done:        # at the end of the episode, print console info for monitoring
             avg_reward = round(sum(episode_reward)/len(episode_reward), 4)
             sum_reward = round(sum(episode_reward), 4)
             episode_elapsed_time = time.time() - episode_start_time
 
-            # print out some stuff....
             # add one to the step, episode numbers to deal with zero indexing
             print("\n********** Episode {} ***********".format(p.episode + 1))
             print("Episode Steps: {}".format(episode_timesteps))
@@ -110,7 +109,7 @@ if __name__ == "__main__":
             p.graphs.update_step_list_graphs()
 
             # if the total reward is better than best, save new model
-            if sum_reward > best_episode_reward:
+            if sum_reward > best_episode_reward:    # TODO check original TD3 paper evaluation method.
                 best_episode_reward = sum_reward
                 policy.save()
 

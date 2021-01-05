@@ -26,16 +26,16 @@ episode = 0
 # SISL Environment setup
 # ----------------------------------------------------------------------------------------------------------------------
 num_agents = 3
-multiwalker_env = multiwalker_v5.env(n_walkers=num_agents,
-                                     position_noise=1e-3,
-                                     angle_noise=1e-3,
-                                     local_ratio=1.0,
-                                     forward_reward=1.0,
-                                     terminate_reward=-100.0,
-                                     fall_reward=-10.0,
-                                     terminate_on_fall=True,
-                                     remove_on_fall=True,
-                                     max_cycles=500)        # TODO may want to shorten to 200
+multiwalker_env = multiwalker_v5.parallel_env(n_walkers=num_agents,
+                                              position_noise=1e-3,
+                                              angle_noise=1e-3,
+                                              local_ratio=1.0,
+                                              forward_reward=1.0,
+                                              terminate_reward=-100.0,
+                                              fall_reward=-10.0,
+                                              terminate_on_fall=True,
+                                              remove_on_fall=True,
+                                              max_cycles=500)
 multiwalker_env.seed(seed)              # set the environment seed
 agent_names = ["walker_" + str(num) for num in range(num_agents)]
 # assuming identical agents, just get the first one's info
