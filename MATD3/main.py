@@ -1,10 +1,11 @@
 import time
 import MATD3.params as p
-from MATD3.matd3 import MATD3
 from MATD3.replay.priority_replay_buffer import PrioritizedReplayBuffer
 from MATD3.replay.replay_buffer import ReplayBuffer
 from MATD3.replay.schedules import LinearSchedule
-
+from MATD3.matd3concurrent import MATD3Concurrent
+from MATD3.matd3centralized import MATD3Centralized
+from MATD3.matd3paramshare import MATD3ParamShare
 
 if __name__ == "__main__":
 
@@ -14,7 +15,15 @@ if __name__ == "__main__":
         env.render()
 
     # initialize policy
-    policy = MATD3(p.num_agents)
+    if p.mode == 'centralized':
+        policy = MATD3Centralized()
+    elif p.mode == 'concurrent':
+        policy = MATD3Concurrent()
+    elif p.mode == 'param-share':
+        policy = MATD3ParamShare()
+    else:
+        policy = None
+        print('not a valid policy')
 
     # initialize replay
     if p.priority:
@@ -56,19 +65,19 @@ if __name__ == "__main__":
                 env.reset()
                 time.sleep(2)
             else:       # else get random action for exploration
-                for agent in p.agent_names:     # TODO update to parallel environment
+                for agent in p.agent_names:
                     actions[int(agent[-1:])] = env.action_spaces[agent].sample()
             if p.render:
                 env.render()
         else:           # if exploration complete, then choose actions via policy
-            actions = policy.select_actions(state)  # TODO update to parallel environment
+            actions = policy.select_actions(state)
         # perform the action for each agent, use the final reward for the cooperative task
         # the reward will be the distance moved after all n walkers move
-        for i in range(p.num_agents):  # TODO update to parallel environment
+        for i in range(p.num_agents):
             env.step(actions[i])
 
         # get the values after the step
-        next_state, reward, done, info = env.last()  # TODO update to parallel environment
+        next_state, reward, done, info = env.last()
 
         # store the step in the replay buffer
         replay_buffer.add(state, actions, reward, next_state, done)
@@ -89,7 +98,8 @@ if __name__ == "__main__":
             p.reports.write_step_report(p.episode + 1, p.step, reward, done, elapsed_time)
 
         # add step to graph data
-        p.graphs.step_list.append([p.episode, p.step, reward, done, elapsed_time])
+        if p.write_graphs:
+            p.graphs.step_list.append([p.episode, p.step, reward, done, elapsed_time])
 
         if done:        # at the end of the episode, print console info for monitoring
             avg_reward = round(sum(episode_reward)/len(episode_reward), 4)
@@ -106,7 +116,8 @@ if __name__ == "__main__":
             print("Episode elapsed Time: {}".format(time.strftime("%H:%M:%S", time.gmtime(episode_elapsed_time))))
 
             # update the graphs at the end of the episode
-            p.graphs.update_step_list_graphs()
+            if p.write_graphs:
+                p.graphs.update_step_list_graphs()
 
             # if the total reward is better than best, save new model
             if sum_reward > best_episode_reward:    # TODO check original TD3 paper evaluation method.
@@ -125,6 +136,7 @@ if __name__ == "__main__":
             episode_timesteps = 0
             p.episode += 1
             episode_start_time = time.time()
-
-    p.reports.write_final_values()        # reports written in a batch, make sure final batch is written
-    p.graphs.update_step_list_graphs()    # at the end do a final update of the graphs
+    if p.write_reports:
+        p.reports.write_final_values()        # reports written in a batch, make sure final batch is written
+    if p.write_graphs:
+        p.graphs.update_step_list_graphs()    # at the end do a final update of the graphs

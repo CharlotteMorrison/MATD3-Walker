@@ -12,10 +12,10 @@ class Reports:
         + error report: episode, step, error
         """
         # open reports
-        self.step_report = open('reports/step_report_{}.csv'.format(p.timestr), 'w+')
-        self.actor_report = open('reports/actor_report_{}.csv'.format(p.timestr),  'w+')
-        self.critic_report = open('reports/critic_report_{}.csv'.format(p.timestr),  'w+')
-        self.evaluation_report = open('reports/evaluation_report_{}.csv'.format(p.timestr), 'w+')
+        self.step_report = open('reports/{}_step_report_{}.csv'.format(p.mode, p.timestr), 'w+')
+        self.actor_report = open('reports/{}_actor_report_{}.csv'.format(p.mode, p.timestr),  'w+')
+        self.critic_report = open('reports/{}_critic_report_{}.csv'.format(p.mode, p.timestr),  'w+')
+        self.evaluation_report = open('reports/{}_evaluation_report_{}.csv'.format(p.mode, p.timestr), 'w+')
         # write headers for files
         self.step_report.write("episode,step,reward,solved,time_elapsed\n")
         self.actor_report.write("episode,step,agent,actor_loss\n")

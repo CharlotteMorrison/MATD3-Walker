@@ -7,12 +7,13 @@ from MATD3.actor import Actor
 from MATD3.critic import Critic
 
 
-class MATD3(object):
+class MATD3Concurrent(object):
     """
     Agent class that handles the training of the networks and provides outputs as actions.
     """
 
     def __init__(self, n_agents=p.num_agents):  # may need this param for later, when doing cooperative
+        self.n_agents = p.num_agents
         self.actor = []
         self.actor_target = []
         self.actor_optimizer = []
@@ -21,7 +22,7 @@ class MATD3(object):
         self.critic_target = []
         self.critic_optimizer = []
 
-        for agent in range(n_agents):
+        for agent in range(self.n_agents):
             self.actor.append(Actor(p.state_dim, p.action_dim, p.max_action).to(p.device))
             self.actor_target.append(Actor(p.state_dim, p.action_dim, p.max_action).to(p.device))
             self.actor_target[agent].load_state_dict(self.actor[agent].state_dict())
@@ -91,9 +92,10 @@ class MATD3(object):
 
             # write the critic loss to the report, graphs
             # update values from main- this is janky- rework later.
-            p.reports.write_critic_report(p.episode + 1, p.step, p.agent_names[i], critic_loss)
-
-            p.graphs.critic_list.append([p.episode + 1, p.step, p.agent_names[i], critic_loss.item()])
+            if p.write_reports:
+                p.reports.write_critic_report(p.episode + 1, p.step, p.agent_names[i], critic_loss)
+            if p.write_graphs:
+                p.graphs.critic_list.append([p.episode + 1, p.step, p.agent_names[i], critic_loss.item()])
 
             # optimize the critic
             self.critic_optimizer[i].zero_grad()
@@ -113,8 +115,10 @@ class MATD3(object):
                 actor_loss = -self.critic[i].get_q(state, self.actor[i](state)).mean()
 
                 # update values from main- this is janky- rework later.
-                p.reports.write_actor_report(p.episode + 1, p.step, p.agent_names[i], actor_loss)
-                p.graphs.actor_list.append([p.episode + 1, p.step, p.agent_names[i], actor_loss.item()])
+                if p.write_reports:
+                    p.reports.write_actor_report(p.episode + 1, p.step, p.agent_names[i], actor_loss)
+                if p.write_graphs:
+                    p.graphs.actor_list.append([p.episode + 1, p.step, p.agent_names[i], actor_loss.item()])
 
                 # optimize the actor
                 self.actor_optimizer[i].zero_grad()
@@ -130,25 +134,25 @@ class MATD3(object):
     def save(self):
         for i in range(p.num_agents):
             torch.save(self.critic[i].state_dict(),
-                       'models/policy_{}_'.format(p.timestr) + p.agent_names[i] + '_critic.pth')
+                       'models/concurrent-policy_{}_'.format(p.timestr) + p.agent_names[i] + '_critic.pth')
             torch.save(self.critic_optimizer[i].state_dict(),
-                       'models/policy_{}_'.format(p.timestr) + p.agent_names[i] + '_critic_optimizer.pth')
+                       'models/concurrent-policy_{}_'.format(p.timestr) + p.agent_names[i] + '_critic_optimizer.pth')
 
             torch.save(self.actor[i].state_dict(),
-                       'models/policy_{}_'.format(p.timestr) + p.agent_names[i] + '_actor.pth')
+                       'models/concurrent-policy_{}_'.format(p.timestr) + p.agent_names[i] + '_actor.pth')
             torch.save(self.actor_optimizer[i].state_dict(),
-                       'models/policy_{}_'.format(p.timestr) + p.agent_names[i] + '_actor_optimizer.pth')
+                       'models/concurrent-policy_{}_'.format(p.timestr) + p.agent_names[i] + '_actor_optimizer.pth')
 
     def load(self):
         for i in range(p.num_agents):
             self.critic[i].load_state_dict(torch.load(
-                'models/policy_{}_'.format(p.timestr) + p.agent_names[i] + '_critic.pth'))
+                'models/concurrent-policy_{}_'.format(p.timestr) + p.agent_names[i] + '_critic.pth'))
             self.critic_optimizer[i].load_state_dict(torch.load(
-                'models/policy_{}_'.format(p.timestr) + p.agent_names[i] + '_critic_optimizer.pth'))
+                'models/concurrent-policy_{}_'.format(p.timestr) + p.agent_names[i] + '_critic_optimizer.pth'))
             self.critic_target[i] = copy.deepcopy(self.critic[i])
 
             self.actor[i].load_state_dict(torch.load(
-                'models/policy_{}_'.format(p.timestr) + p.agent_names[i] + '_agent.pth'))
+                'models/concurrent-policy_{}_'.format(p.timestr) + p.agent_names[i] + '_agent.pth'))
             self.actor_optimizer[i].load_state_dict(
-                'models/policy_{}_'.format(p.timestr) + p.agent_names[i] + '_actor_optimizer.pth')
+                'models/concurrent-policy_{}_'.format(p.timestr) + p.agent_names[i] + '_actor_optimizer.pth')
             self.actor_target[i] = copy.deepcopy(self.actor[i])

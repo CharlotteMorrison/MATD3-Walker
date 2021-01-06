@@ -11,6 +11,8 @@ class Graphs:
         sns.set_style('whitegrid')
         plt.style.use('seaborn')
 
+        self.mode = p.mode
+
         # temp storage for values, to costly to append data to frame... don't do it
         self.step_list = []
         self.actor_list = []
@@ -56,7 +58,7 @@ class Graphs:
         plt.xlabel('Episode')
         plt.ylabel('Reward')
         plt.legend()
-        plt.savefig('plots/episode_average_reward_{}.png'.format(p.timestr))
+        plt.savefig('plots/{}_episode_average_reward_{}.png'.format(self.mode, p.timestr))
         if self.show_graphs:
             plt.show()
         plt.close()
@@ -83,7 +85,7 @@ class Graphs:
         ax[2].legend()
         ax[3].legend()
 
-        plt.savefig('plots/reward_rolling_average_{}.png'.format(p.timestr))
+        plt.savefig('plots/{}_reward_rolling_average_{}.png'.format(self.mode, p.timestr))
         if self.show_graphs:
             plt.show()
         plt.close()
@@ -94,7 +96,7 @@ class Graphs:
         plt.xlabel('Episode')
         plt.ylabel('Steps In Episode')
         plt.legend()
-        plt.savefig('plots/episode_length_{}.png'.format(p.timestr))
+        plt.savefig('plots/{}_episode_length_{}.png'.format(self.mode, p.timestr))
         if self.show_graphs:
             plt.show()
         plt.close()
@@ -105,7 +107,7 @@ class Graphs:
         plt.xlabel('Episode')
         plt.ylabel('Actor Loss')
         plt.legend()
-        plt.savefig('plots/actor_loss_plot_{}.png'.format(p.timestr))
+        plt.savefig('plots/{}_actor_loss_plot_{}.png'.format(self.mode, p.timestr))
         if p.show_graphs:
             plt.show()
         plt.close()
@@ -115,7 +117,7 @@ class Graphs:
         plt.xlabel('Episode')
         plt.ylabel('Critic Loss')
         plt.legend()
-        plt.savefig('plots/critic_loss_plot_{}.png'.format(p.timestr))
+        plt.savefig('plots/{}_critic_loss_plot_{}.png'.format(self.mode, p.timestr))
         if self.show_graphs:
             plt.show()
         plt.close()
@@ -127,7 +129,7 @@ class Graphs:
         plt.xlabel('Episode')
         plt.ylabel('Evaluate Reward')
         plt.legend()
-        plt.savefig('plots/evaluation_{}.png'.format(p.timestr))
+        plt.savefig('plots/{}_evaluation_{}.png'.format(self.mode, p.timestr))
         if self.show_graphs:
             plt.show()
         plt.close()

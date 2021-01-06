@@ -13,11 +13,18 @@ seed = 42                           # seed value for numpy, env, torch
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # write csv reports
 write_reports = True
+write_graphs = True
 show_graphs = False
 # global date/time for file naming
 timestr = datetime.now().strftime("%d-%b-%y_%H-%M")
-reports = Reports()
-graphs = Graphs()
+
+# mode selection for run: centralized, concurrent, parameter sharing
+mode = 'centralized'
+
+if write_reports:
+    reports = Reports()
+if write_graphs:
+    graphs = Graphs()
 
 # variables for tracking current episode, step
 step = 0
@@ -26,16 +33,16 @@ episode = 0
 # SISL Environment setup
 # ----------------------------------------------------------------------------------------------------------------------
 num_agents = 3
-multiwalker_env = multiwalker_v5.parallel_env(n_walkers=num_agents,
-                                              position_noise=1e-3,
-                                              angle_noise=1e-3,
-                                              local_ratio=1.0,
-                                              forward_reward=1.0,
-                                              terminate_reward=-100.0,
-                                              fall_reward=-10.0,
-                                              terminate_on_fall=True,
-                                              remove_on_fall=True,
-                                              max_cycles=500)
+multiwalker_env = multiwalker_v5.env(n_walkers=num_agents,
+                                    position_noise=1e-3,
+                                    angle_noise=1e-3,
+                                    local_ratio=1.0,
+                                    forward_reward=1.0,
+                                    terminate_reward=-100.0,
+                                    fall_reward=-10.0,
+                                    terminate_on_fall=True,
+                                    remove_on_fall=True,
+                                    max_cycles=500)
 multiwalker_env.seed(seed)              # set the environment seed
 agent_names = ["walker_" + str(num) for num in range(num_agents)]
 # assuming identical agents, just get the first one's info
