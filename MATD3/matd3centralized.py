@@ -12,9 +12,9 @@ class MATD3Centralized(object):
     Agent class that handles the training of the networks and provides outputs as actions.
     """
 
-    def __init__(self):  # may need this param for later, when doing cooperative
-        self.n_agents = p.num_agents
-        self.action_dim = p.num_agents * p.action_dim
+    def __init__(self):
+        self.n_agents = p.num_agents                    # get the global number of agents
+        self.action_dim = p.num_agents * p.action_dim   # create the action dimension agents * number of agents
 
         self.actor = Actor(p.state_dim, self.action_dim, p.max_action).to(p.device)
         self.actor_target = Actor(p.state_dim, self.action_dim, p.max_action).to(p.device)
@@ -34,14 +34,12 @@ class MATD3Centralized(object):
         :param state: 31 dimensions for state
         :return: nested list num_actors x 4
         """
-
         state = torch.FloatTensor(state).to(p.device)
         action = self.actor(state).cpu().data.numpy().flatten()
         # creates Gaussian noise to add to action
         noise = np.random.normal(0, p.max_action * p.exp_noise, size=self.action_dim)
-        # clip the actions
-        action = (action + noise).clip(-p.max_action, p.max_action)
-        actions = action.reshape(self.n_agents, 4)  # rows, columns
+        action = (action + noise).clip(-p.max_action, p.max_action)         # clip the actions
+        actions = action.reshape(self.n_agents, 4)                          # rows, columns
         return actions
 
     def train(self, replay, batch_size=100):
@@ -49,20 +47,20 @@ class MATD3Centralized(object):
 
         # get a sample from the replay buffer (priority buffer option)
         if p.priority:
-            state, actions, reward, next_state, done, weights, indexes = replay.sample(batch_size,
-                                                                                       beta=p.beta_sched.value(self.total_iterations))
+            state, actions, reward, next_state, done, weights, indexes = \
+                replay.sample(batch_size, beta=p.beta_sched.value(self.total_iterations))
         else:
             state, actions, reward, next_state, done = replay.sample(batch_size)
             indexes = [0]   # just to remove the annoying pycharm warning.
 
-        # convert to tensors and send to gpu                                 # batch size 256 sample
+        # convert to tensors and send to gpu                                 # batch size 256, sample
         state = torch.from_numpy(state).float().to(p.device)                 # torch.Size([256, 31])
         next_state = torch.from_numpy(next_state).float().to(p.device)       # torch.Size([256, 31])
         actions = torch.from_numpy(actions).float().to(p.device)             # torch.Size([256, n_agents, 4])
         reward = torch.as_tensor(reward, dtype=torch.float32).to(p.device)   # torch.Size([256])
         done = torch.as_tensor(done, dtype=torch.float32).to(p.device)       # torch.Size([256])
 
-        # split the actions into discrete agents
+        # combine the actions into one input agent
         action = torch.flatten(actions, start_dim=1)
         with torch.no_grad():
             # get action according to policy and add clipped noise
@@ -92,15 +90,12 @@ class MATD3Centralized(object):
         critic_loss.backward()
         self.critic_optimizer.step()
 
-        # TODO: if using priority replay, need to add weighting
         if p.priority:
-            # need to figure out weighting, by reward maybe, must be positive
-            # placeholder list of ones
-            new_priorities = torch.full((256,), 1)
+            # can utilize target_q for weighting, or potentially consider a reward scheme
+            new_priorities = torch.max(target_q, torch.tensor([1e-7]))
             replay.update_priorities(indexes, new_priorities)
 
-        # delayed policy updates
-        if self.total_iterations % p.policy_freq == 0:
+        if self.total_iterations % p.policy_freq == 0:                  # delayed policy updates
             # compute actor loss
             actor_loss = -self.critic.get_q(state, self.actor(state)).mean()
 

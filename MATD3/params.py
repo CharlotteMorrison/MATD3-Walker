@@ -17,7 +17,8 @@ write_graphs = True
 show_graphs = False
 # global date/time for file naming
 timestr = datetime.now().strftime("%d-%b-%y_%H-%M")
-
+eval_frequency = 5e3                # current evaluation every 5000 timesteps, param from td3 paper
+save_model = True                   # save the model and optimizer params
 # mode selection for run: centralized, concurrent, parameter sharing
 mode = 'centralized'
 
@@ -26,7 +27,7 @@ if write_reports:
 if write_graphs:
     graphs = Graphs()
 
-# variables for tracking current episode, step
+# global variables for tracking current episode, step
 step = 0
 episode = 0
 # ----------------------------------------------------------------------------------------------------------------------

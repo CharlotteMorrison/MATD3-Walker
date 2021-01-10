@@ -17,13 +17,12 @@ class Graphs:
         self.step_list = []
         self.actor_list = []
         self.critic_list = []
-        self.evaluate_list = []
 
         self.datafile = pd.DataFrame()
         self.episode_df = pd.DataFrame()
         self.actor_df = pd.DataFrame()
         self.critic_df = pd.DataFrame()
-        self.evaluate_df = pd.DataFrame()
+        # display graphs while running... don't use except for debugging
         self.show_graphs = False
 
     def update_step_list_graphs(self):
@@ -122,12 +121,12 @@ class Graphs:
             plt.show()
         plt.close()
 
-    def avg_evaluation_episode_reward(self):
-        # this is only called from the evaluate
-        self.evaluate_df = pd.DataFrame(self.evaluate_list, columns=['episode', 'step', 'reward'])
-        plt.plot(self.evaluate_df.groupby(['episode']).mean()['reward'], label='Reward')
+    def avg_evaluation_reward(self, evaluate_list):
+        # the evaluations are stored in the main, this one takes in the list as a param
+        evaluate_df = pd.DataFrame(evaluate_list, columns=['episode', 'step', 'reward'])
+        plt.plot(evaluate_df['episode'], evaluate_df['reward'], label='Avg Reward')
         plt.xlabel('Episode')
-        plt.ylabel('Evaluate Reward')
+        plt.ylabel('Average Reward')
         plt.legend()
         plt.savefig('plots/{}_evaluation_{}.png'.format(self.mode, p.timestr))
         if self.show_graphs:

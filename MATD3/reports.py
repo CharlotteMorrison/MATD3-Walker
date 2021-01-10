@@ -76,18 +76,18 @@ class Reports:
             self.write_report(self.critic_report, self.critic_list)
             self.critic_list = []
 
-    def write_evaluate_step(self, episode, step, reward, max_episode):
+    def write_evaluate_step(self, episode, step, reward):
         record = [episode, step, reward]
-        # this shouldn't be that long, so just one write at the end.
+        # this shouldn't be that long, so just write each one, save the list for graphing
         self.evaluate_list.append(record)
-        if len(self.evaluate_list) == max_episode:
-            self.write_report(self.evaluation_report, self.evaluate_list)
+        self.write_report(self.evaluation_report, record)
 
     def write_final_values(self):
         # write any remaining values at the end of the program.
         self.write_report(self.step_report, self.step_list)
         self.write_report(self.actor_report, self.actor_list)
         self.write_report(self.critic_report, self.critic_list)
+        self.write_report(self.evaluation_report, self.evaluate_list[-1])
 
     @staticmethod
     def write_report(report_file, write_list):

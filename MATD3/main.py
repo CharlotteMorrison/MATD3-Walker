@@ -6,6 +6,7 @@ from MATD3.replay.schedules import LinearSchedule
 from MATD3.matd3concurrent import MATD3Concurrent
 from MATD3.matd3centralized import MATD3Centralized
 from MATD3.matd3paramshare import MATD3ParamShare
+from MATD3.utils import eval_policy
 
 if __name__ == "__main__":
 
@@ -33,6 +34,8 @@ if __name__ == "__main__":
         p.beta_sched = LinearSchedule(p.beta_iters, initial_p=p.beta, final_p=1.0)
     else:
         replay_buffer = ReplayBuffer(p.buffer_size)
+
+    evaluations = [eval_policy(policy)]
 
     # get the start time for the program run
     start_time = time.time()
@@ -119,11 +122,12 @@ if __name__ == "__main__":
             if p.write_graphs:
                 p.graphs.update_step_list_graphs()
 
-            # if the total reward is better than best, save new model
-            if sum_reward > best_episode_reward:    # TODO check original TD3 paper evaluation method.
+            # if the total reward is better than best, save new model, REMOVED - using periodic evaluations
+            '''
+            if sum_reward > best_episode_reward:   
                 best_episode_reward = sum_reward
                 policy.save()
-
+            '''
             # reset the environment
             if p.render:
                 env.close()
@@ -136,6 +140,18 @@ if __name__ == "__main__":
             episode_timesteps = 0
             p.episode += 1
             episode_start_time = time.time()
+
+        # run the policy evaluation
+        if step % p.eval_frequency == 0:
+            evaluation = eval_policy(policy)
+            evaluations.append(evaluation)                                  # append the new evaluation
+            if p.write_reports:                                             # write the evaluation to report
+                p.reports.write_evaluate_step(p.episode, step, evaluation)
+            if p.write_graphs:                                              # update the evaluation graph
+                p.graphs.evaluate_list.append(evaluations)
+            if p.save_model:                                                # save the policy
+                policy.save()
+
     if p.write_reports:
         p.reports.write_final_values()        # reports written in a batch, make sure final batch is written
     if p.write_graphs:
