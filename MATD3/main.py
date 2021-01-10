@@ -141,14 +141,15 @@ if __name__ == "__main__":
             p.episode += 1
             episode_start_time = time.time()
 
-        # run the policy evaluation
-        if step % p.eval_frequency == 0:
+        # run the policy evaluation at interval or on last step, can neaten this later.
+        if (step + 1) % p.eval_frequency == 0:
             evaluation = eval_policy(policy)
-            evaluations.append(evaluation)                                  # append the new evaluation
+            evaluations.append(evaluation)                                  # append the new evaluation here
+            p.graphs.evaluate_list.append([p.episode, step, evaluation])
             if p.write_reports:                                             # write the evaluation to report
                 p.reports.write_evaluate_step(p.episode, step, evaluation)
             if p.write_graphs:                                              # update the evaluation graph
-                p.graphs.evaluate_list.append(evaluations)
+                p.graphs.avg_evaluation_reward()
             if p.save_model:                                                # save the policy
                 policy.save()
 
@@ -156,3 +157,4 @@ if __name__ == "__main__":
         p.reports.write_final_values()        # reports written in a batch, make sure final batch is written
     if p.write_graphs:
         p.graphs.update_step_list_graphs()    # at the end do a final update of the graphs
+

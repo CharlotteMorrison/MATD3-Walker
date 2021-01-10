@@ -17,6 +17,7 @@ class Graphs:
         self.step_list = []
         self.actor_list = []
         self.critic_list = []
+        self.evaluate_list = []
 
         self.datafile = pd.DataFrame()
         self.episode_df = pd.DataFrame()
@@ -121,9 +122,8 @@ class Graphs:
             plt.show()
         plt.close()
 
-    def avg_evaluation_reward(self, evaluate_list):
-        # the evaluations are stored in the main, this one takes in the list as a param
-        evaluate_df = pd.DataFrame(evaluate_list, columns=['episode', 'step', 'reward'])
+    def avg_evaluation_reward(self):
+        evaluate_df = pd.DataFrame(self.evaluate_list, columns=['episode', 'step', 'reward'])
         plt.plot(evaluate_df['episode'], evaluate_df['reward'], label='Avg Reward')
         plt.xlabel('Episode')
         plt.ylabel('Average Reward')

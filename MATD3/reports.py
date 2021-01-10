@@ -80,14 +80,14 @@ class Reports:
         record = [episode, step, reward]
         # this shouldn't be that long, so just write each one, save the list for graphing
         self.evaluate_list.append(record)
-        self.write_report(self.evaluation_report, record)
+        # do a write of the list here, not in the write-report function.
+        self.evaluation_report.write("%s\n" % ','.join(str(col) for col in record))
 
     def write_final_values(self):
         # write any remaining values at the end of the program.
         self.write_report(self.step_report, self.step_list)
         self.write_report(self.actor_report, self.actor_list)
         self.write_report(self.critic_report, self.critic_list)
-        self.write_report(self.evaluation_report, self.evaluate_list[-1])
 
     @staticmethod
     def write_report(report_file, write_list):
