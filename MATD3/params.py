@@ -20,7 +20,7 @@ timestr = datetime.now().strftime("%d-%b-%y_%H-%M")
 eval_frequency = 5e3                # current evaluation every 5000 timesteps, param from td3 paper
 save_model = True                   # save the model and optimizer params
 # mode selection for run: centralized, concurrent, parameter sharing
-mode = 'centralized'
+mode = 'concurrent'
 
 if write_reports:
     reports = Reports()
@@ -62,7 +62,7 @@ discount = 0.99                         # discount factor
 tau = 0.005                             # target network update rate
 lr = 3e-4                               # learning rate
 obs_timesteps = 10000                   # number of random observations to pre-populate the replay
-max_timsteps = 1000000                  # number of training steps to run
+max_timsteps = 3000000                  # number of training steps to run
 exp_noise = 0.1                         # Std of Gaussian exploration noise
 batch_size = 256                        # size of the sample from experience replay
 # ----------------------------------------------------------------------------------------------------------------------
